@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>منصة مؤشرات الجمعيات</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root{
@@ -481,7 +482,13 @@ const api={
   async verifyOTP(email,otp){const r=await fetch(`${SUPABASE_URL}/auth/v1/verify`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,token:otp,type:'email'})});if(!r.ok){const r2=await fetch(`${SUPABASE_URL}/auth/v1/verify`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,token:otp,type:'magiclink'})});if(!r2.ok)return null;return r2.json();}return r.json();},
   async getUser(){const t=localStorage.getItem('kpis_token');if(!t)return null;const r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${t}`}});if(!r.ok){localStorage.removeItem('kpis_token');return null;}return r.json();},
   async q(table,params=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`,{headers:H()});return r.ok?r.json():[];},
-  async ins(table,data,ret=true){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:{...H(),Prefer:ret?'return=representation':'return=minimal'},body:JSON.stringify(data)});return r.ok?(ret?(await r.json())[0]:true):null;},
+  async ins(table,data,ret=true){
+    try{
+      const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:{...H(),Prefer:ret?'return=representation':'return=minimal'},body:JSON.stringify(data)});
+      if(!r.ok){const err=await r.json().catch(()=>({}));console.error('ins error',table,r.status,err);return null;}
+      return ret?(await r.json())[0]:true;
+    }catch(e){console.error('ins exception',table,e);return null;}
+  },
   async upd(table,id,data){await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,{method:'PATCH',headers:H(),body:JSON.stringify(data)});},
   async del(table,id){await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,{method:'DELETE',headers:H()});},
 };
@@ -601,8 +608,10 @@ function renderDash(){
 
   // Build filter buttons
   const cats=[...new Set(kpis.map(k=>k.category_id).filter(Boolean))];
+  const catLabels={gov:'الحوكمة',fin_perf:'المالية — أداء',fin_org:'المالية — تنظيم',compliance:'الامتثال',transparency:'الشفافية',impact:'الأثر الاجتماعي',custom:'مخصص'};
   const fr=document.getElementById('filter-row');
-  fr.innerHTML='<button class="filter-btn active" onclick="filterKPIs(\'all\',this)">الكل</button>';
+  fr.innerHTML='<button class="filter-btn active" onclick="filterKPIs(\'all\',this)">الكل</button>'
+    +cats.map(c=>`<button class="filter-btn" onclick="filterKPIs('${c}',this)">${catLabels[c]||c}</button>`).join('');
 
   // KPI List
   renderKPIList();
@@ -724,7 +733,7 @@ function renderLibrary(){
       <div class="lib-items" id="lib-${ci}">
         ${cat.items.map(item=>{const added=addedNames.has(item.name);return`<div class="lib-item">
           <div style="flex:1"><div style="font-size:12px;color:var(--text)">${item.name}</div><div style="font-size:11px;color:var(--text2)">الهدف: ${item.target||'—'}</div></div>
-          <button class="lib-add-btn ${added?'added':''}" id="lbtn-${item.id}" onclick="addFromLib('${item.id}','${item.name.replace(/'/g,"\\'")}','${item.target||''}','${cat.key}')">${added?'✓ مضاف':'+ إضافة'}</button>
+          <button class="lib-add-btn ${added?'added':''}" id="lbtn-${item.id}" data-lib-id="${item.id}" data-lib-name="${item.name.replace(/"/g,'&quot;')}" data-lib-target="${(item.target||'').replace(/"/g,'&quot;')}" data-lib-cat="${cat.key}" onclick="addFromLibBtn(this)">${added?'✓ مضاف':'+ إضافة'}</button>
         </div>`;}).join('')}
       </div>
     </div>`;
@@ -733,12 +742,29 @@ function renderLibrary(){
 
 function toggleLibCat(i){const el=document.getElementById('lib-'+i);const ch=document.getElementById('chev-'+i);const open=el.classList.toggle('open');ch.style.transform=open?'rotate(180deg)':'';}
 
+function addFromLibBtn(btn){
+  const libId=btn.dataset.libId;
+  const name=btn.dataset.libName;
+  const target=btn.dataset.libTarget;
+  const catKey=btn.dataset.libCat;
+  addFromLib(libId,name,target,catKey);
+}
 async function addFromLib(libId,name,target,catKey){
-  if(!currentAssoc)return;
+  if(!currentAssoc){showToast('⚠️ لم يتم تحميل بيانات الجمعية');return;}
   const existing=kpis.find(k=>k.name===name);
   if(existing){showToast('هذا المؤشر مضاف بالفعل');return;}
+  const btn=document.getElementById('lbtn-'+libId);
+  if(btn){btn.textContent='جاري...';btn.disabled=true;}
   const kpi=await api.ins('kpis',{association_id:currentAssoc.id,name,target,category_id:catKey,period:'ربعي',order_num:kpis.length});
-  if(kpi){kpis.push(kpi);document.getElementById('sb-kpi-count').textContent=kpis.length;const btn=document.getElementById('lbtn-'+libId);if(btn){btn.textContent='✓ مضاف';btn.classList.add('added');}showToast(`✓ تمت إضافة "${name}"`);}
+  if(kpi){
+    kpis.push(kpi);
+    document.getElementById('sb-kpi-count').textContent=kpis.length;
+    if(btn){btn.textContent='✓ مضاف';btn.classList.add('added');btn.disabled=false;}
+    showToast(`✓ تمت إضافة "${name}"`);
+  } else {
+    if(btn){btn.textContent='+ إضافة';btn.disabled=false;}
+    showToast('⚠️ تعذّرت الإضافة');
+  }
 }
 
 // Custom KPI
@@ -748,9 +774,31 @@ function openCustomCatSelect(){
   sel.innerHTML=defaults.map(d=>`<option value="${d.v}">${d.l}</option>`).join('')+customCats.map(c=>`<option value="${c.key}">${c.name}</option>`).join('');
 }
 async function saveCustomKPI(){
-  const name=document.getElementById('cm-name').value.trim();if(!name||!currentAssoc)return;
-  const kpi=await api.ins('kpis',{association_id:currentAssoc.id,name,target:document.getElementById('cm-target').value.trim(),category_id:document.getElementById('cm-cat').value,period:document.getElementById('cm-period').value,order_num:kpis.length});
-  if(kpi){kpis.push(kpi);document.getElementById('sb-kpi-count').textContent=kpis.length;closeModal('custom-modal');document.getElementById('cm-name').value='';renderDash();showToast(`✓ تمت إضافة "${name}"`);}
+  const name=document.getElementById('cm-name').value.trim();
+  if(!name){showToast('⚠️ أدخل اسم المؤشر');return;}
+  if(!currentAssoc){showToast('⚠️ لم يتم تحميل بيانات الجمعية');return;}
+  const btn=document.querySelector('#custom-modal .btn-p');
+  if(btn){btn.disabled=true;btn.textContent='جاري الإضافة...';}
+  const kpi=await api.ins('kpis',{
+    association_id:currentAssoc.id,
+    name,
+    target:document.getElementById('cm-target').value.trim(),
+    category_id:document.getElementById('cm-cat').value,
+    period:document.getElementById('cm-period').value,
+    order_num:kpis.length
+  });
+  if(btn){btn.disabled=false;btn.textContent='إضافة';}
+  if(kpi){
+    kpis.push(kpi);
+    document.getElementById('sb-kpi-count').textContent=kpis.length;
+    closeModal('custom-modal');
+    document.getElementById('cm-name').value='';
+    document.getElementById('cm-target').value='';
+    renderDash();
+    showToast(`✓ تمت إضافة "${name}"`);
+  } else {
+    showToast('⚠️ تعذّرت الإضافة — تحقق من الاتصال');
+  }
 }
 
 // Users
@@ -842,12 +890,29 @@ function goTo(p,btn){
 }
 
 function topAction(){
-  const actions={dash:()=>{openCustomCatSelect();openModal('custom-modal');},library:()=>{openCustomCatSelect();openModal('custom-modal');},users:()=>openModal('invite-modal'),settings:()=>saveSettings()};
-  (actions[document.getElementById('page-title').textContent==='لوحة المؤشرات'?'dash':Object.keys(actions).find(k=>document.getElementById('page-'+k).style.display!=='none')]||function(){})();
+  const pages_map={dash:'dash',update:'update',library:'library',users:'users',share:'share',settings:'settings'};
+  let currentPage='dash';
+  for(const p of Object.keys(pages_map)){
+    const el=document.getElementById('page-'+p);
+    if(el&&el.style.display!=='none'){currentPage=p;break;}
+  }
+  if(currentPage==='dash'||currentPage==='library'){openModal('custom-modal');}
+  else if(currentPage==='users'){openModal('invite-modal');}
+  else if(currentPage==='settings'){saveSettings();}
 }
 
 // Modals
-function openModal(id){if(id==='custom-modal')openCustomCatSelect();document.getElementById(id).classList.add('open');}
+function openModal(id){
+  if(id==='custom-modal'){
+    openCustomCatSelect();
+    document.getElementById('cm-name').value='';
+    document.getElementById('cm-target').value='';
+    document.getElementById('cm-period').selectedIndex=0;
+    document.getElementById('cm-cat').selectedIndex=0;
+    setTimeout(()=>document.getElementById('cm-name').focus(),100);
+  }
+  document.getElementById(id).classList.add('open');
+}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));});
