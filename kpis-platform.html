@@ -254,7 +254,7 @@ body{font-family:'IBM Plex Sans Arabic',sans-serif;direction:rtl;background:var(
   <main class="main" style="position:relative">
     <div class="topbar">
       <button class="toggle-btn" onclick="toggleSb()"><i class="ti ti-layout-sidebar-right" style="font-size:15px;color:var(--text3)"></i></button>
-      <div class="breadcrumb" id="breadcrumb"><i class="ti ti-home" style="font-size:12px"></i>&nbsp;<strong>لوحة المؤشرات</strong></div>
+      <div class="breadcrumb" id="breadcrumb"><i class="ti ti-home" style="font-size:12px"></i>&nbsp;<strong id="page-title">لوحة المؤشرات</strong></div>
       <div class="tb-actions">
         <button class="btn" id="btn-export" onclick="exportPDF()"><i class="ti ti-download"></i> تصدير PDF</button>
         <button class="btn btn-dark" id="btn-board" onclick="toggleBoard()"><i class="ti ti-presentation"></i> وضع مجلس الإدارة</button>
@@ -478,7 +478,7 @@ const H=()=>({'apikey':SUPABASE_KEY,'Authorization':`Bearer ${localStorage.getIt
 
 const api={
   async sendOTP(email){const r=await fetch(`${SUPABASE_URL}/auth/v1/otp`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({email})});return r.ok;},
-  async verifyOTP(email,otp){const r=await fetch(`${SUPABASE_URL}/auth/v1/verify`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,token:otp,type:'email'})});if(!r.ok)return null;return r.json();},
+  async verifyOTP(email,otp){const r=await fetch(`${SUPABASE_URL}/auth/v1/verify`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,token:otp,type:'email'})});if(!r.ok){const r2=await fetch(`${SUPABASE_URL}/auth/v1/verify`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,token:otp,type:'magiclink'})});if(!r2.ok)return null;return r2.json();}return r.json();},
   async getUser(){const t=localStorage.getItem('kpis_token');if(!t)return null;const r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${t}`}});if(!r.ok){localStorage.removeItem('kpis_token');return null;}return r.json();},
   async q(table,params=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`,{headers:H()});return r.ok?r.json():[];},
   async ins(table,data,ret=true){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:{...H(),Prefer:ret?'return=representation':'return=minimal'},body:JSON.stringify(data)});return r.ok?(ret?(await r.json())[0]:true):null;},
@@ -831,7 +831,7 @@ function goTo(p,btn){
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   const titles={dash:'لوحة المؤشرات',update:'تحديث المؤشرات',library:'مكتبة المؤشرات',users:'المستخدمون',share:'المشاركة والتقارير',settings:'الإعدادات'};
-  if(titles[p]){document.getElementById('page-title').textContent=titles[p];document.getElementById('breadcrumb').innerHTML=`<i class="ti ti-home" style="font-size:12px"></i>&nbsp;<strong>${titles[p]}</strong>`;}
+  if(titles[p]){const pt=document.getElementById('page-title');if(pt)pt.textContent=titles[p];document.getElementById('breadcrumb').innerHTML=`<i class="ti ti-home" style="font-size:12px"></i>&nbsp;<strong id="page-title">${titles[p]}</strong>`;}
   const showBoard=['dash','update','share'].includes(p);
   document.getElementById('btn-board').style.display=showBoard?'':'none';
   document.getElementById('btn-export').style.display=showBoard?'':'none';
