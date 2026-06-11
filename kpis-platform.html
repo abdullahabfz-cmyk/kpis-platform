@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة مؤشرات الجمعيات</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --g:#006944;--gl:#E8F4F0;--gd:#004D33;--g2:#1D9E75;
+  --red:#C62828;--redl:#FFEBEE;
+  --amber:#F57F17;--ambl:#FFF8E1;
+  --blue:#1565C0;--bluel:#E3F2FD;
+  --border:#E2E8F0;--text:#1A202C;--text2:#4A5568;--text3:#718096;
+  --gray:#F7FAFC;--bg:#F0F4F8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'IBM Plex Sans Arabic',sans-serif;direction:rtl;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* Auth */
+.auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:var(--g);}
+.auth-card{background:#fff;border-radius:12px;padding:36px 32px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.2);}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+.auth-logo-icon{width:40px;height:40px;background:var(--gl);border-radius:10px;display:flex;align-items:center;justify-content:center;}
+.auth-title{font-size:20px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.auth-sub{font-size:13px;color:var(--text3);margin-bottom:24px;}
+.auth-step{display:none;}
+.auth-step.active{display:block;}
+.fl{display:block;font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+.fi{width:100%;background:var(--gray);border:1.5px solid var(--border);color:var(--text);font-family:inherit;font-size:14px;padding:10px 14px;border-radius:8px;outline:none;transition:border-color .15s;margin-bottom:14px;}
+.fi:focus{border-color:var(--g);background:#fff;}
+.fi.otp{letter-spacing:8px;font-size:22px;text-align:center;font-weight:600;}
+.auth-btn{width:100%;padding:12px;background:var(--g);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;}
+.auth-btn:hover{background:var(--gd);}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed;}
+.auth-msg{font-size:12px;margin-top:8px;text-align:center;color:var(--text3);}
+.auth-msg.error{color:var(--red);}
+.auth-back{font-size:12px;color:var(--g);cursor:pointer;margin-top:10px;text-align:center;}
+.otp-hint{font-size:13px;color:var(--text2);text-align:center;margin-bottom:14px;line-height:1.6;}
+
+/* App */
+.app{display:none;height:100vh;overflow:hidden;}
+.app.show{display:flex;}
+.sb{width:210px;background:var(--g);display:flex;flex-direction:column;flex-shrink:0;transition:width .25s ease;overflow:hidden;}
+.sb.collapsed{width:48px;}
+.sb-logo{padding:14px 12px;border-bottom:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;gap:10px;min-height:54px;}
+.sb-logo-icon{width:30px;height:30px;background:rgba(255,255,255,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-logo-text{white-space:nowrap;overflow:hidden;}
+.sb-logo-title{font-size:13px;font-weight:500;color:#fff;}
+.sb-logo-sub{font-size:10px;color:rgba(255,255,255,0.5);}
+.sb-nav{flex:1;padding:6px 0;overflow-y:auto;overflow-x:hidden;}
+.sb-sec{font-size:10px;color:rgba(255,255,255,0.4);padding:8px 12px 3px;letter-spacing:.5px;white-space:nowrap;transition:opacity .2s;}
+.sb.collapsed .sb-sec{opacity:0;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 11px;font-size:12px;color:rgba(255,255,255,0.7);cursor:pointer;margin:1px 5px;border-radius:6px;transition:all .15s;white-space:nowrap;}
+.sb-item:hover{background:rgba(255,255,255,0.1);color:#fff;}
+.sb-item.active{background:rgba(255,255,255,0.18);color:#fff;font-weight:500;}
+.sb-item i{font-size:15px;width:16px;text-align:center;flex-shrink:0;}
+.sb-label{overflow:hidden;transition:opacity .2s;}
+.sb.collapsed .sb-label{opacity:0;width:0;}
+.sb-badge{margin-right:auto;background:rgba(255,255,255,0.18);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;flex-shrink:0;transition:opacity .2s;}
+.sb.collapsed .sb-badge{opacity:0;width:0;padding:0;}
+.sb-user{padding:10px 11px;border-top:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;gap:8px;min-height:48px;}
+.sb-av{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:500;flex-shrink:0;}
+.sb-uinfo{overflow:hidden;white-space:nowrap;transition:opacity .2s;}
+.sb.collapsed .sb-uinfo{opacity:0;width:0;}
+.sb-logout{margin-right:auto;cursor:pointer;color:rgba(255,255,255,0.5);font-size:14px;transition:color .15s;flex-shrink:0;}
+.sb-logout:hover{color:#fff;}
+.sb.collapsed .sb-logout{display:none;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:52px;padding:0 16px;border-bottom:1px solid var(--border);background:#fff;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.toggle-btn{width:30px;height:30px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.toggle-btn:hover{background:var(--gray);}
+.breadcrumb{flex:1;display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text3);overflow:hidden;}
+.breadcrumb strong{color:var(--text);}
+.tb-actions{display:flex;gap:6px;flex-shrink:0;}
+.btn{padding:6px 12px;font-size:12px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s;font-family:inherit;border:1px solid var(--border);background:transparent;color:var(--text2);}
+.btn:hover{background:var(--gray);}
+.btn-p{background:var(--g);color:#fff;border-color:var(--g);}
+.btn-p:hover{background:var(--gd);}
+.btn-dark{background:#0d1117;color:#fff;border-color:#0d1117;}
+.content{flex:1;overflow-y:auto;padding:16px 18px;}
+.content::-webkit-scrollbar{width:3px;}
+.content::-webkit-scrollbar-thumb{background:#CBD5E0;border-radius:4px;}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+.stat{background:#fff;border-radius:8px;padding:12px 13px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.stat-ic{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.stat-n{font-size:20px;font-weight:500;line-height:1;}
+.stat-l{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* KPI Cards */
+.kpi-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;border-right:3px solid transparent;cursor:pointer;transition:all .15s;margin-bottom:8px;}
+.kpi-card:hover{border-color:#CBD5E0;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+.kpi-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.kpi-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.kpi-name{font-size:13px;font-weight:500;color:var(--text);flex:1;}
+.kpi-cat{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;}
+.tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;}
+.t-on{background:#E8F5E9;color:#2E7D32;}
+.t-warn{background:#FFF8E1;color:#F57F17;}
+.t-off{background:#FFEBEE;color:#C62828;}
+.kpi-body{display:flex;align-items:center;gap:14px;}
+.prog-track{flex:1;height:5px;background:var(--gray);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:3px;}
+.kpi-ref{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px;margin-top:8px;padding-top:7px;border-top:1px solid var(--border);}
+.kpi-ref a{color:#1565C0;text-decoration:none;}
+
+/* Filter */
+.filter-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.filter-btn{padding:4px 12px;font-size:11px;border-radius:16px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;transition:all .15s;}
+.filter-btn.active{background:var(--gl);color:var(--g);border-color:var(--g);}
+
+/* Section */
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.sec-title{font-size:13px;font-weight:500;color:var(--text);}
+.card-box{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;}
+.back-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--g);cursor:pointer;margin-bottom:12px;font-weight:500;}
+
+/* Library */
+.lib-cat{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;}
+.lib-cat-header{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;}
+.lib-cat-header:hover{background:var(--gray);}
+.lib-items{display:none;border-top:1px solid var(--border);}
+.lib-items.open{display:block;}
+.lib-item{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);}
+.lib-item:last-child{border-bottom:none;}
+.lib-item:hover{background:var(--gray);}
+.lib-add-btn{padding:3px 10px;font-size:11px;border-radius:6px;border:1px solid var(--g);background:transparent;color:var(--g);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.lib-add-btn:hover,.lib-add-btn.added{background:var(--gl);}
+
+/* Users */
+.member-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--gray);border-radius:8px;margin-bottom:6px;}
+.member-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;}
+
+/* Share */
+.share-link-box{display:flex;gap:8px;align-items:center;margin-top:8px;}
+.share-link{flex:1;font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--gray);color:var(--text2);}
+
+/* Board mode */
+.board-wrap{position:absolute;inset:0;z-index:5;border-radius:10px;overflow-y:auto;background:#0d1117;display:none;}
+.board-topbar{padding:16px 22px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;}
+.board-org-logo{width:38px;height:38px;border-radius:10px;background:rgba(0,105,68,0.35);border:1px solid rgba(29,158,117,0.4);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:#4ade80;}
+.board-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px 22px;border-bottom:1px solid rgba(255,255,255,0.05);}
+.board-sum{background:rgba(255,255,255,0.04);border-radius:8px;padding:12px 14px;border:1px solid rgba(255,255,255,0.06);}
+.board-sum-n{font-size:22px;font-weight:500;line-height:1;margin-bottom:3px;}
+.board-sum-l{font-size:11px;color:rgba(255,255,255,0.35);}
+.board-charts{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 22px;border-bottom:1px solid rgba(255,255,255,0.05);}
+.board-chart-card{background:rgba(255,255,255,0.03);border-radius:8px;padding:14px;border:1px solid rgba(255,255,255,0.06);}
+.board-chart-title{font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px;}
+.board-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 22px 20px;}
+.board-card{background:rgba(255,255,255,0.04);border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,0.06);position:relative;overflow:hidden;}
+.board-card-accent{position:absolute;top:0;right:0;width:3px;height:100%;}
+.board-cat{font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:5px;}
+.board-kname{font-size:12px;color:rgba(255,255,255,0.65);margin-bottom:8px;line-height:1.4;}
+.board-val{font-size:24px;font-weight:500;line-height:1;}
+.board-target{font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;}
+.board-prog{height:3px;background:rgba(255,255,255,0.07);border-radius:2px;margin-top:10px;overflow:hidden;}
+.board-prog-fill{height:100%;border-radius:2px;}
+.board-btn{padding:6px 14px;font-size:12px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.1);border-radius:6px;cursor:pointer;font-family:inherit;}
+.board-btn:hover{background:rgba(255,255,255,0.12);}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:12px;padding:22px 24px;width:400px;animation:slideUp .2s ease;max-height:90vh;overflow-y:auto;}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:18px;color:var(--text);}
+.mf{margin-bottom:14px;}
+.mf label{display:block;font-size:11px;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.mf input,.mf select,.mf textarea{width:100%;background:var(--gray);border:1.5px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;padding:8px 12px;border-radius:8px;outline:none;transition:border-color .15s;}
+.mf input:focus,.mf select:focus,.mf textarea:focus{border-color:var(--g);background:#fff;}
+.mf textarea{resize:none;height:70px;}
+.mf-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:#1A202C;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;transition:transform .3s;z-index:200;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+.loading{text-align:center;padding:40px;color:var(--text3);font-size:13px;}
+.empty-state{text-align:center;padding:50px 20px;color:var(--text3);}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:.4;}
+</style>
+</head>
+<body>
+
+<!-- Auth -->
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#006944" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:600;color:var(--g)">منصة المؤشرات</div>
+        <div style="font-size:11px;color:var(--text3)">kpis.kulmaz.com</div>
+      </div>
+    </div>
+    <div class="auth-title">تسجيل الدخول</div>
+    <div class="auth-sub">أدخل بريدك الإلكتروني لاستلام رمز التحقق</div>
+    <div class="auth-step active" id="step-email">
+      <label class="fl">البريد الإلكتروني</label>
+      <input class="fi" id="email-input" type="email" placeholder="example@email.com" dir="ltr">
+      <button class="auth-btn" id="send-btn" onclick="sendOTP()">إرسال رمز التحقق</button>
+      <div class="auth-msg" id="email-msg"></div>
+    </div>
+    <div class="auth-step" id="step-otp">
+      <div class="otp-hint">أُرسل رمز إلى<br><strong id="otp-email-display" dir="ltr"></strong></div>
+      <label class="fl">رمز التحقق</label>
+      <input class="fi otp" id="otp-input" type="text" maxlength="6" placeholder="——————" dir="ltr" oninput="this.value=this.value.replace(/\D/g,'')">
+      <button class="auth-btn" id="verify-btn" onclick="verifyOTP()">تأكيد الدخول</button>
+      <div class="auth-msg" id="otp-msg"></div>
+      <div class="auth-back" onclick="backToEmail()">← تغيير الإيميل</div>
+      <div class="auth-msg" style="margin-top:6px">لم يصلك الرمز؟ <span id="resend-countdown" style="color:var(--amber);font-weight:500"></span> <span id="resend-link" style="color:var(--g);cursor:pointer;display:none" onclick="sendOTP()">إعادة الإرسال</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- App -->
+<div class="app" id="app">
+  <aside class="sb" id="sb">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div class="sb-logo-text">
+        <div class="sb-logo-title" id="sb-assoc-name">المنصة</div>
+        <div class="sb-logo-sub" id="sb-assoc-url">kpis.kulmaz.com</div>
+      </div>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-sec">الرئيسية</div>
+      <div class="sb-item active" id="nav-dash" onclick="goTo('dash',this)"><i class="ti ti-layout-dashboard"></i><span class="sb-label"> لوحة المؤشرات</span><span class="sb-badge" id="sb-kpi-count">0</span></div>
+      <div class="sb-item" id="nav-update" onclick="goTo('update',this)"><i class="ti ti-edit"></i><span class="sb-label"> تحديث المؤشرات</span></div>
+      <div class="sb-sec">المكتبة</div>
+      <div class="sb-item" id="nav-library" onclick="goTo('library',this)"><i class="ti ti-template"></i><span class="sb-label"> مكتبة المؤشرات</span></div>
+      <div class="sb-sec">الإدارة</div>
+      <div class="sb-item" id="nav-users" onclick="goTo('users',this)"><i class="ti ti-users"></i><span class="sb-label"> المستخدمون</span></div>
+      <div class="sb-item" id="nav-share" onclick="goTo('share',this)"><i class="ti ti-share"></i><span class="sb-label"> المشاركة والتقارير</span></div>
+      <div class="sb-item" id="nav-settings" onclick="goTo('settings',this)"><i class="ti ti-settings"></i><span class="sb-label"> الإعدادات</span></div>
+    </div>
+    <div class="sb-user">
+      <div class="sb-av" id="sb-av">؟</div>
+      <div class="sb-uinfo">
+        <div style="font-size:11px;color:#fff;font-weight:500" id="sb-uname">...</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.5)" id="sb-urole">...</div>
+      </div>
+      <i class="ti ti-logout sb-logout" onclick="logout()" title="تسجيل الخروج"></i>
+    </div>
+  </aside>
+
+  <main class="main" style="position:relative">
+    <div class="topbar">
+      <button class="toggle-btn" onclick="toggleSb()"><i class="ti ti-layout-sidebar-right" style="font-size:15px;color:var(--text3)"></i></button>
+      <div class="breadcrumb" id="breadcrumb"><i class="ti ti-home" style="font-size:12px"></i>&nbsp;<strong>لوحة المؤشرات</strong></div>
+      <div class="tb-actions">
+        <button class="btn" id="btn-export" onclick="exportPDF()"><i class="ti ti-download"></i> تصدير PDF</button>
+        <button class="btn btn-dark" id="btn-board" onclick="toggleBoard()"><i class="ti ti-presentation"></i> وضع مجلس الإدارة</button>
+        <button class="btn btn-p" id="top-btn" onclick="topAction()"><i class="ti ti-plus"></i><span id="top-btn-text"> إضافة</span></button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- داشبورد -->
+      <div id="page-dash">
+        <div class="stats">
+          <div class="stat"><div class="stat-ic" style="background:var(--gl)"><i class="ti ti-chart-line" style="color:var(--g);font-size:16px"></i></div><div><div class="stat-n" style="color:var(--g)" id="s-total">0</div><div class="stat-l">إجمالي المؤشرات</div></div></div>
+          <div class="stat"><div class="stat-ic" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:16px"></i></div><div><div class="stat-n" style="color:#2E7D32" id="s-on">0</div><div class="stat-l">ضمن الهدف</div></div></div>
+          <div class="stat"><div class="stat-ic" style="background:var(--ambl)"><i class="ti ti-alert-triangle" style="color:var(--amber);font-size:16px"></i></div><div><div class="stat-n" style="color:var(--amber)" id="s-warn">0</div><div class="stat-l">تحتاج متابعة</div></div></div>
+          <div class="stat"><div class="stat-ic" style="background:var(--redl)"><i class="ti ti-alert-circle" style="color:var(--red);font-size:16px"></i></div><div><div class="stat-n" style="color:var(--red)" id="s-off">0</div><div class="stat-l">خارج الهدف</div></div></div>
+        </div>
+        <div class="sec-header"><div class="sec-title">مؤشرات الأداء</div></div>
+        <div class="filter-row" id="filter-row">
+          <button class="filter-btn active" onclick="filterKPIs('all',this)">الكل</button>
+        </div>
+        <div id="kpi-list"><div class="loading">جاري التحميل...</div></div>
+      </div>
+
+      <!-- تفاصيل مؤشر -->
+      <div id="page-detail" style="display:none">
+        <div class="back-btn" onclick="goTo('dash',document.getElementById('nav-dash'))"><i class="ti ti-arrow-right"></i> رجوع</div>
+        <div class="card-box" id="detail-header"></div>
+        <div class="card-box">
+          <div class="sec-title" style="margin-bottom:12px">التطور التاريخي</div>
+          <canvas id="history-chart" height="110"></canvas>
+        </div>
+        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:var(--gray)">
+              <th style="text-align:right;padding:7px 12px;font-size:11px;color:var(--text3);font-weight:500;border-bottom:1px solid var(--border)">الفترة</th>
+              <th style="text-align:center;padding:7px 12px;font-size:11px;color:var(--text3);font-weight:500;border-bottom:1px solid var(--border)">القيمة</th>
+              <th style="text-align:center;padding:7px 12px;font-size:11px;color:var(--text3);font-weight:500;border-bottom:1px solid var(--border)">الحالة</th>
+              <th style="text-align:right;padding:7px 12px;font-size:11px;color:var(--text3);font-weight:500;border-bottom:1px solid var(--border)">مرجع الإثبات</th>
+            </tr></thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- تحديث -->
+      <div id="page-update" style="display:none">
+        <div class="sec-title" style="margin-bottom:12px" id="update-title">تحديث المؤشرات</div>
+        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:var(--gray)">
+              <th style="text-align:right;padding:8px 12px;font-size:11px;color:var(--text3);font-weight:500;border-bottom:1px solid var(--border)">المؤشر</th>
+              <th style="text-align:center;padding:8px 12px;font-size:11px;color:var(--text3);font-weight:500;border-bottom:1px solid var(--border)">القيمة الحالية</th>
+              <th style="text-align:right;padding:8px 12px;font-size:11px;color:var(--text3);font-weight:500;border-bottom:1px solid var(--border)">مرجع الإثبات (اختياري)</th>
+            </tr></thead>
+            <tbody id="update-tbody"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px">
+          <button class="btn btn-p" onclick="saveUpdates()"><i class="ti ti-check"></i> حفظ التحديثات</button>
+        </div>
+      </div>
+
+      <!-- مكتبة -->
+      <div id="page-library" style="display:none">
+        <div class="sec-header">
+          <div class="sec-title">مكتبة المؤشرات</div>
+          <button class="btn btn-p" onclick="openModal('custom-modal')"><i class="ti ti-plus"></i> مؤشر مخصص</button>
+        </div>
+        <div id="lib-cats"><div class="loading">جاري التحميل...</div></div>
+      </div>
+
+      <!-- المستخدمون -->
+      <div id="page-users" style="display:none">
+        <div class="sec-header">
+          <div class="sec-title">المستخدمون</div>
+          <button class="btn btn-p" onclick="openModal('invite-modal')"><i class="ti ti-plus"></i> دعوة مستخدم</button>
+        </div>
+        <div class="card-box">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:12px">يمكن إضافة مستخدمَين كحد أقصى — مدير وموظف تحديث.</div>
+          <div id="users-list"><div class="loading">جاري التحميل...</div></div>
+        </div>
+        <div class="card-box">
+          <div class="sec-title" style="margin-bottom:10px">الأدوار المتاحة</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--gray);border-radius:8px"><span style="font-size:10px;padding:2px 7px;border-radius:8px;background:var(--gl);color:var(--g);flex-shrink:0;margin-top:1px">مدير الجمعية</span><div style="font-size:12px;color:var(--text2)">يشوف كل شيء، يضيف ويعدّل المؤشرات، يدير المستخدمين، يشارك الروابط</div></div>
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--gray);border-radius:8px"><span style="font-size:10px;padding:2px 7px;border-radius:8px;background:var(--bluel);color:var(--blue);flex-shrink:0;margin-top:1px">محرر</span><div style="font-size:12px;color:var(--text2)">يحدّث قيم المؤشرات فقط — لا يقدر يضيف أو يحذف</div></div>
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--gray);border-radius:8px"><span style="font-size:10px;padding:2px 7px;border-radius:8px;background:#F3E5F5;color:#6A1B9A;flex-shrink:0;margin-top:1px">مشاهد</span><div style="font-size:12px;color:var(--text2)">يشوف المؤشرات فقط بدون أي تعديل</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- المشاركة -->
+      <div id="page-share" style="display:none">
+        <div class="sec-title" style="margin-bottom:12px">المشاركة والتقارير</div>
+        <div class="card-box">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <div style="width:34px;height:34px;background:var(--bluel);border-radius:8px;display:flex;align-items:center;justify-content:center"><i class="ti ti-heart" style="font-size:16px;color:var(--blue)"></i></div>
+            <div><div style="font-size:13px;font-weight:500;color:var(--text)">رابط المانحين</div><div style="font-size:11px;color:var(--text2)">يرى المانح المؤشرات والإنجازات فقط — بدون صلاحيات تعديل</div></div>
+          </div>
+          <div class="share-link-box">
+            <div class="share-link" id="donors-link" dir="ltr">kpis.kulmaz.com/—/donors</div>
+            <button class="btn" onclick="copyLink('donors-link')"><i class="ti ti-copy"></i> نسخ</button>
+          </div>
+        </div>
+        <div class="card-box">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <div style="width:34px;height:34px;background:var(--gl);border-radius:8px;display:flex;align-items:center;justify-content:center"><i class="ti ti-building" style="font-size:16px;color:var(--g)"></i></div>
+            <div><div style="font-size:13px;font-weight:500;color:var(--text)">رابط الجهة الرقابية</div><div style="font-size:11px;color:var(--text2)">عرض شامل مع مراجع الإثبات — للمدققين والجهات المشرفة</div></div>
+          </div>
+          <div class="share-link-box">
+            <div class="share-link" id="oversight-link" dir="ltr">kpis.kulmaz.com/—/oversight</div>
+            <button class="btn" onclick="copyLink('oversight-link')"><i class="ti ti-copy"></i> نسخ</button>
+          </div>
+        </div>
+        <div class="card-box">
+          <div class="sec-title" style="margin-bottom:10px">تصدير التقارير</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-p" onclick="exportPDF()"><i class="ti ti-file-type-pdf"></i> تقرير PDF</button>
+            <button class="btn" onclick="exportExcel()"><i class="ti ti-file-spreadsheet"></i> تصدير Excel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- إعدادات -->
+      <div id="page-settings" style="display:none">
+        <div class="sec-title" style="margin-bottom:12px">الإعدادات</div>
+        <div class="card-box">
+          <div class="sec-title" style="margin-bottom:12px">معلومات الجمعية</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">اسم الجمعية</label><input type="text" id="assoc-name-input" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--gray);color:var(--text)"></div>
+            <div><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">المعرّف في الرابط</label><input type="text" id="assoc-slug-input" dir="ltr" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--gray);color:var(--text)"></div>
+          </div>
+          <button class="btn btn-p" style="margin-top:10px;font-size:11px" onclick="saveSettings()"><i class="ti ti-check"></i> حفظ</button>
+        </div>
+        <div class="card-box">
+          <div class="sec-title" style="margin-bottom:4px">التصنيفات المخصصة</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:10px">حد أقصى 3 تصنيفات مخصصة</div>
+          <div id="custom-cats-list"></div>
+          <button class="btn btn-p" style="font-size:11px;margin-top:8px" id="add-cat-btn" onclick="addCustomCat()"><i class="ti ti-plus"></i> إضافة تصنيف</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- وضع مجلس الإدارة -->
+    <div class="board-wrap" id="board-wrap">
+      <div class="board-topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="board-org-logo" id="board-logo">أث</div>
+          <div>
+            <div style="font-size:15px;font-weight:500;color:#fff" id="board-org-name">الجمعية</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.35)">لوحة مؤشرات الأداء المؤسسي</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="board-btn" onclick="exportPDF()"><i class="ti ti-download"></i> PDF</button>
+          <button class="board-btn" onclick="toggleBoard()"><i class="ti ti-arrow-right"></i> رجوع</button>
+        </div>
+      </div>
+      <div class="board-summary">
+        <div class="board-sum"><div class="board-sum-n" style="color:#fff" id="b-total">0</div><div class="board-sum-l">إجمالي المؤشرات</div></div>
+        <div class="board-sum"><div class="board-sum-n" style="color:#4ade80" id="b-on">0</div><div class="board-sum-l">ضمن الهدف</div></div>
+        <div class="board-sum"><div class="board-sum-n" style="color:#fbbf24" id="b-warn">0</div><div class="board-sum-l">تحتاج متابعة</div></div>
+        <div class="board-sum"><div class="board-sum-n" style="color:#f87171" id="b-off">0</div><div class="board-sum-l">خارج الهدف</div></div>
+      </div>
+      <div class="board-charts">
+        <div class="board-chart-card"><div class="board-chart-title">توزيع حالات المؤشرات</div><canvas id="board-donut" height="120"></canvas></div>
+        <div class="board-chart-card"><div class="board-chart-title">مسار الإنجاز — آخر 6 أشهر</div><canvas id="board-trend" height="120"></canvas></div>
+      </div>
+      <div class="board-grid" id="board-grid"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="custom-modal">
+  <div class="modal">
+    <div class="modal-title">إضافة مؤشر مخصص</div>
+    <div class="mf"><label>اسم المؤشر *</label><input type="text" id="cm-name" placeholder="مثال: عدد المشاريع المنجزة"></div>
+    <div class="mf"><label>الهدف</label><input type="text" id="cm-target" placeholder="مثال: 10 مشاريع أو 80%"></div>
+    <div class="mf-row">
+      <div class="mf"><label>الفترة</label><select id="cm-period"><option>شهري</option><option>ربعي</option><option>نصف سنوي</option><option>سنوي</option></select></div>
+      <div class="mf"><label>التصنيف</label><select id="cm-cat"></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('custom-modal')">إلغاء</button>
+      <button class="btn btn-p" onclick="saveCustomKPI()">إضافة</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="invite-modal">
+  <div class="modal">
+    <div class="modal-title">دعوة مستخدم جديد</div>
+    <div class="mf"><label>البريد الإلكتروني *</label><input type="email" id="inv-email" placeholder="example@email.com" dir="ltr"></div>
+    <div class="mf"><label>الاسم</label><input type="text" id="inv-name"></div>
+    <div class="mf"><label>الدور</label>
+      <select id="inv-role">
+        <option value="editor">محرر — يحدّث القيم فقط</option>
+        <option value="viewer">مشاهد — للقراءة فقط</option>
+        <option value="admin">مدير الجمعية</option>
+      </select>
+    </div>
+    <div style="background:var(--gray);border-radius:6px;padding:10px;font-size:11px;color:var(--text2);margin-top:4px"><i class="ti ti-mail" style="font-size:13px"></i> سيصله إيميل دعوة مع رابط الدخول</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('invite-modal')">إلغاء</button>
+      <button class="btn btn-p" onclick="sendInvite()">إرسال الدعوة</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════
+// ⚠️ غيّر هذين السطرين
+const SUPABASE_URL='https://xxxxxxxxxx.supabase.co';
+const SUPABASE_KEY='sb_publishable_xxxxxxxxxx';
+// ════════════════════════════
+
+const H=()=>({'apikey':SUPABASE_KEY,'Authorization':`Bearer ${localStorage.getItem('kpis_token')||SUPABASE_KEY}`,'Content-Type':'application/json'});
+
+const api={
+  async sendOTP(email){const r=await fetch(`${SUPABASE_URL}/auth/v1/otp`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({email})});return r.ok;},
+  async verifyOTP(email,otp){const r=await fetch(`${SUPABASE_URL}/auth/v1/verify`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,token:otp,type:'email'})});if(!r.ok)return null;return r.json();},
+  async getUser(){const t=localStorage.getItem('kpis_token');if(!t)return null;const r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${t}`}});if(!r.ok){localStorage.removeItem('kpis_token');return null;}return r.json();},
+  async q(table,params=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`,{headers:H()});return r.ok?r.json():[];},
+  async ins(table,data,ret=true){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:{...H(),Prefer:ret?'return=representation':'return=minimal'},body:JSON.stringify(data)});return r.ok?(ret?(await r.json())[0]:true):null;},
+  async upd(table,id,data){await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,{method:'PATCH',headers:H(),body:JSON.stringify(data)});},
+  async del(table,id){await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,{method:'DELETE',headers:H()});},
+};
+
+// State
+let currentUser=null,currentProfile=null,currentAssoc=null;
+let kpis=[],kpiValues=[],libKPIs=[],profiles=[],customCats=[];
+let currentFilter='all',activeChart=null,boardDonut=null,boardTrend=null;
+let sbOpen=true;
+
+const PC={green:'#2E7D32',amber:'#F57F17',red:'#C62828'};
+const BPC={green:'#4ade80',amber:'#fbbf24',red:'#f87171'};
+const catColors={gov:{bg:'#E8F4F0',tc:'#006944'},fin_perf:{bg:'#E3F2FD',tc:'#1565C0'},fin_org:{bg:'#E8F4F0',tc:'#006944'},compliance:{bg:'#FFF8E1',tc:'#F57F17'},transparency:{bg:'#F3E5F5',tc:'#6A1B9A'},impact:{bg:'#FCE4EC',tc:'#AD1457'},custom:{bg:'#F0F4F8',tc:'#4A5568'}};
+
+function getCatColor(key){return catColors[key]||catColors.custom;}
+function ini(n,e){if(n&&n!==e)return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();return(e||'?')[0].toUpperCase();}
+
+// Auth
+async function sendOTP(){
+  const email=document.getElementById('email-input').value.trim();
+  if(!email.includes('@')){setMsg('email-msg','أدخل إيميلاً صحيحاً','error');return;}
+  const btn=document.getElementById('send-btn');btn.disabled=true;btn.textContent='جاري الإرسال...';
+  const ok=await api.sendOTP(email);
+  btn.disabled=false;btn.textContent='إرسال رمز التحقق';
+  if(ok){document.getElementById('otp-email-display').textContent=email;document.getElementById('step-email').classList.remove('active');document.getElementById('step-otp').classList.add('active');document.getElementById('otp-input').focus();startCountdown();}
+  else setMsg('email-msg','تعذّر الإرسال','error');
+}
+async function verifyOTP(){
+  const email=document.getElementById('email-input').value.trim();
+  const otp=document.getElementById('otp-input').value.trim();
+  if(otp.length<5){setMsg('otp-msg','أدخل الرمز كاملاً','error');return;}
+  const btn=document.getElementById('verify-btn');btn.disabled=true;btn.textContent='جاري التحقق...';
+  const data=await api.verifyOTP(email,otp);
+  btn.disabled=false;btn.textContent='تأكيد الدخول';
+  if(data&&data.access_token){localStorage.setItem('kpis_token',data.access_token);currentUser=data.user;await loadApp();}
+  else setMsg('otp-msg','الرمز غير صحيح','error');
+}
+function backToEmail(){document.getElementById('step-otp').classList.remove('active');document.getElementById('step-email').classList.add('active');document.getElementById('otp-input').value='';}
+let cdT;
+function startCountdown(){let s=60;const el=document.getElementById('resend-countdown');const lk=document.getElementById('resend-link');lk.style.display='none';clearInterval(cdT);cdT=setInterval(()=>{s--;el.textContent=s>0?`انتظر ${s}ث`:'';if(s<=0){clearInterval(cdT);lk.style.display='inline';}},1000);}
+function setMsg(id,msg,type){const el=document.getElementById(id);if(el){el.textContent=msg;el.className='auth-msg '+(type||'');}}
+function logout(){localStorage.removeItem('kpis_token');currentUser=null;currentProfile=null;currentAssoc=null;kpis=[];kpiValues=[];document.getElementById('app').classList.remove('show');document.getElementById('auth-screen').style.display='flex';document.getElementById('step-otp').classList.remove('active');document.getElementById('step-email').classList.add('active');document.getElementById('email-input').value='';}
+
+// Load App
+async function loadApp(){
+  try{
+    // Get/create profile
+    let profs=await api.q('profiles',`id=eq.${currentUser.id}`);
+    if(!profs.length){
+      await api.ins('profiles',{id:currentUser.id,email:currentUser.email,full_name:currentUser.email.split('@')[0],role:'association_admin'},false);
+      profs=await api.q('profiles',`id=eq.${currentUser.id}`);
+    }
+    currentProfile=profs[0]||{role:'association_admin',email:currentUser.email,full_name:currentUser.email.split('@')[0]};
+
+    // Get/create association
+    if(currentProfile.association_id){
+      const assocs=await api.q('associations',`id=eq.${currentProfile.association_id}`);
+      currentAssoc=assocs[0]||null;
+    }
+    if(!currentAssoc){
+      const slug=currentUser.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,'');
+      currentAssoc=await api.ins('associations',{name:'جمعيتي',slug});
+      if(currentAssoc)await api.upd('profiles',currentProfile.id,{association_id:currentAssoc.id});
+    }
+
+    // Update UI
+    const name=currentProfile.full_name||currentProfile.email;
+    document.getElementById('sb-uname').textContent=name;
+    document.getElementById('sb-urole').textContent=currentProfile.role==='platform_admin'?'مدير المنصة':'مدير الجمعية';
+    document.getElementById('sb-av').textContent=ini(currentProfile.full_name,currentProfile.email);
+    if(currentAssoc){
+      document.getElementById('sb-assoc-name').textContent=currentAssoc.name;
+      document.getElementById('sb-assoc-url').textContent=`kpis.kulmaz.com/${currentAssoc.slug}`;
+      document.getElementById('donors-link').textContent=`kpis.kulmaz.com/${currentAssoc.slug}/donors`;
+      document.getElementById('oversight-link').textContent=`kpis.kulmaz.com/${currentAssoc.slug}/oversight`;
+      document.getElementById('assoc-name-input').value=currentAssoc.name;
+      document.getElementById('assoc-slug-input').value=currentAssoc.slug;
+      document.getElementById('board-org-name').textContent=currentAssoc.name;
+      document.getElementById('board-logo').textContent=currentAssoc.name.slice(0,2);
+    }
+
+    // Load data
+    await loadKPIs();
+    libKPIs=await api.q('library_kpis','order=category_key.asc,order_num.asc');
+    profiles=await api.q('profiles',currentAssoc?`association_id=eq.${currentAssoc.id}`:'');
+
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('app').classList.add('show');
+    renderDash();
+    goTo('dash',document.getElementById('nav-dash'));
+  }catch(e){console.error('loadApp:',e);showToast('⚠️ خطأ في التحميل');}
+}
+
+async function loadKPIs(){
+  if(!currentAssoc)return;
+  kpis=await api.q('kpis',`association_id=eq.${currentAssoc.id}&order=order_num.asc`);
+  if(kpis.length){
+    const ids=kpis.map(k=>k.id).join(',');
+    kpiValues=await api.q('kpi_values',`kpi_id=in.(${ids})&order=updated_at.desc`);
+  }else kpiValues=[];
+  document.getElementById('sb-kpi-count').textContent=kpis.length;
+}
+
+// KPI helpers
+function getLatestValue(kpiId){return kpiValues.find(v=>v.kpi_id===kpiId)||null;}
+function getHistory(kpiId){return kpiValues.filter(v=>v.kpi_id===kpiId).slice(0,6).reverse();}
+
+// Render Dashboard
+function renderDash(){
+  const on=kpis.filter(k=>(getLatestValue(k.id)||{}).status==='green').length;
+  const warn=kpis.filter(k=>(getLatestValue(k.id)||{}).status==='amber').length;
+  const off=kpis.filter(k=>(getLatestValue(k.id)||{}).status==='red').length;
+  document.getElementById('s-total').textContent=kpis.length;
+  document.getElementById('s-on').textContent=on;
+  document.getElementById('s-warn').textContent=warn;
+  document.getElementById('s-off').textContent=off;
+
+  // Build filter buttons
+  const cats=[...new Set(kpis.map(k=>k.category_id).filter(Boolean))];
+  const fr=document.getElementById('filter-row');
+  fr.innerHTML='<button class="filter-btn active" onclick="filterKPIs(\'all\',this)">الكل</button>';
+
+  // KPI List
+  renderKPIList();
+}
+
+function renderKPIList(){
+  const list=document.getElementById('kpi-list');
+  if(!kpis.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">📊</div><p>لا توجد مؤشرات بعد</p><button class="btn btn-p" style="margin-top:12px" onclick="goTo(\'library\',document.getElementById(\'nav-library\'))"><i class="ti ti-template"></i> أضف من المكتبة</button></div>';return;}
+  const filtered=currentFilter==='all'?kpis:kpis.filter(k=>k.category_id===currentFilter);
+  list.innerHTML=filtered.map(k=>{
+    const val=getLatestValue(k.id)||{status:'amber',progress:0,value:'—',evidence_ref:''};
+    const isLink=val.evidence_ref&&val.evidence_ref.startsWith('http');
+    const refHtml=val.evidence_ref?(isLink?`<a href="${val.evidence_ref}" target="_blank"><i class="ti ti-external-link"></i> عرض الملف</a>`:`<i class="ti ti-folder"></i> ${val.evidence_ref}`):'<span style="color:var(--text3)">لا يوجد مرجع</span>';
+    const cc=getCatColor(k.category_id||'custom');
+    return`<div class="kpi-card" style="border-right-color:${PC[val.status||'amber']}" onclick="showDetail('${k.id}')">
+      <div class="kpi-header">
+        <div class="kpi-dot" style="background:${PC[val.status||'amber']}"></div>
+        <div class="kpi-name">${k.name}</div>
+        <span class="kpi-cat" style="background:${cc.bg};color:${cc.tc}">${k.category_id||'مخصص'}</span>
+        <span class="tag t-${val.status==='green'?'on':val.status==='red'?'off':'warn'}">${val.status==='green'?'ضمن الهدف':val.status==='red'?'خارج الهدف':'يحتاج متابعة'}</span>
+      </div>
+      <div class="kpi-body">
+        <div style="min-width:70px"><div style="font-size:20px;font-weight:500;color:${PC[val.status||'amber']}">${val.value||'—'}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">الهدف: ${k.target||'—'}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">${k.period||'—'}</div></div>
+        <div style="flex:1"><div class="prog-track"><div class="prog-fill" style="width:${val.progress||0}%;background:${PC[val.status||'amber']}"></div></div><div style="font-size:10px;color:var(--text2);margin-top:3px">${val.progress||0}% من الهدف</div></div>
+      </div>
+      <div class="kpi-ref"><i class="ti ti-paperclip"></i> ${refHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function filterKPIs(f,btn){currentFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderKPIList();}
+
+// Detail
+function showDetail(kpiId){
+  const k=kpis.find(x=>x.id===kpiId);if(!k)return;
+  const val=getLatestValue(kpiId)||{status:'amber',progress:0,value:'—'};
+  const cc=getCatColor(k.category_id||'custom');
+  document.getElementById('detail-header').innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="width:38px;height:38px;border-radius:8px;background:${cc.bg};display:flex;align-items:center;justify-content:center"><i class="ti ti-chart-line" style="font-size:18px;color:${cc.tc}"></i></div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500;color:var(--text)">${k.name}</div><div style="font-size:11px;color:var(--text2)">${k.category_id||'مخصص'} · ${k.period||'—'}</div></div>
+      <div style="text-align:left"><div style="font-size:22px;font-weight:500;color:${PC[val.status||'amber']}">${val.value||'—'}</div><div style="font-size:11px;color:var(--text2)">الهدف: ${k.target||'—'}</div></div>
+    </div>
+    <div style="height:6px;background:var(--gray);border-radius:4px;overflow:hidden"><div style="width:${val.progress||0}%;height:100%;background:${PC[val.status||'amber']};border-radius:4px"></div></div>`;
+  const hist=getHistory(kpiId);
+  document.getElementById('history-tbody').innerHTML=hist.length?hist.map(h=>`
+    <tr><td style="padding:7px 12px;font-size:12px">${h.period_label||new Date(h.updated_at).toLocaleDateString('ar-SA',{month:'short',year:'numeric'})}</td>
+    <td style="text-align:center;font-size:12px;font-weight:500;color:${PC[h.status||'amber']}">${h.value||'—'}</td>
+    <td style="text-align:center"><span class="tag t-${h.status==='green'?'on':h.status==='red'?'off':'warn'}">${h.status==='green'?'ضمن الهدف':h.status==='red'?'خارج':'متابعة'}</span></td>
+    <td style="font-size:11px;color:var(--text3);padding:7px 12px">${h.evidence_ref||'—'}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;padding:20px;font-size:12px;color:var(--text3)">لا توجد تحديثات سابقة</td></tr>';
+  pages.forEach(p=>{const el=document.getElementById('page-'+p);if(el)el.style.display='none';});
+  document.getElementById('page-detail').style.display='block';
+  document.getElementById('page-title').textContent=k.name;
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
+  setTimeout(()=>{
+    if(activeChart)activeChart.destroy();
+    if(!hist.length)return;
+    activeChart=new Chart(document.getElementById('history-chart'),{type:'line',data:{labels:hist.map(h=>h.period_label||new Date(h.updated_at).toLocaleDateString('ar-SA',{month:'short'})),datasets:[{label:'القيمة',data:hist.map(h=>parseFloat(h.value)||h.progress||0),borderColor:PC[val.status||'amber'],backgroundColor:PC[val.status||'amber']+'18',borderWidth:2,pointRadius:4,pointBackgroundColor:PC[val.status||'amber'],fill:true,tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}}}}}});
+  },80);
+}
+
+// Update
+function renderUpdateTable(){
+  document.getElementById('update-title').textContent=`تحديث المؤشرات — ${new Date().toLocaleDateString('ar-SA',{month:'long',year:'numeric'})}`;
+  document.getElementById('update-tbody').innerHTML=kpis.map(k=>{
+    const val=getLatestValue(k.id)||{value:'',evidence_ref:''};
+    return`<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 12px;font-size:12px">${k.name}<div style="font-size:10px;color:var(--text3)">الهدف: ${k.target||'—'}</div></td>
+      <td style="padding:8px;text-align:center"><input type="text" data-kpi="${k.id}" data-field="value" value="${val.value||''}" placeholder="أدخل القيمة..." style="width:90px;text-align:center;font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--gray);color:var(--text)"></td>
+      <td style="padding:8px 12px"><input type="text" data-kpi="${k.id}" data-field="ref" value="${val.evidence_ref||''}" placeholder="رابط أو وصف مكان الملف..." style="width:100%;font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--gray);color:var(--text)"></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="3" style="text-align:center;padding:30px;font-size:12px;color:var(--text3)">لا توجد مؤشرات</td></tr>';
+}
+
+async function saveUpdates(){
+  const rows=document.querySelectorAll('#update-tbody tr');
+  let saved=0;
+  for(const row of rows){
+    const vInput=row.querySelector('[data-field="value"]');
+    const rInput=row.querySelector('[data-field="ref"]');
+    if(!vInput)continue;
+    const kpiId=vInput.dataset.kpi;
+    const value=vInput.value.trim();
+    const ref=rInput?.value.trim()||'';
+    if(!value)continue;
+    const numVal=parseFloat(value.replace('%','').replace(',',''))||0;
+    const kpi=kpis.find(k=>k.id===kpiId);
+    const targetNum=parseFloat((kpi?.target||'0').replace('%','').replace(',','').replace(/<|>|أكبر من|أقل من/g,'').trim())||0;
+    let status='amber';
+    if(kpi?.target){
+      const tStr=kpi.target;
+      if(tStr.includes('أقل')){status=numVal<targetNum?'green':numVal<targetNum*1.2?'amber':'red';}
+      else{status=numVal>=targetNum?'green':numVal>=targetNum*0.8?'amber':'red';}
+    }
+    const progress=targetNum>0?Math.min(Math.round(numVal/targetNum*100),100):(value.toLowerCase()==='نعم'?100:0);
+    const data={kpi_id:kpiId,value,status,progress,evidence_ref:ref,period_label:new Date().toLocaleDateString('ar-SA',{month:'long',year:'numeric'}),updated_by:currentUser.id,updated_at:new Date().toISOString()};
+    await api.ins('kpi_values',data,false);
+    saved++;
+  }
+  await loadKPIs();
+  renderDash();
+  showToast(`✓ تم حفظ ${saved} تحديث`);
+}
+
+// Library
+function renderLibrary(){
+  if(!libKPIs.length){document.getElementById('lib-cats').innerHTML='<div class="loading">جاري التحميل...</div>';return;}
+  const grouped={};
+  libKPIs.forEach(l=>{if(!grouped[l.category_key])grouped[l.category_key]={name:l.category_name,key:l.category_key,items:[]};grouped[l.category_key].items.push(l);});
+  const addedNames=new Set(kpis.map(k=>k.name));
+  document.getElementById('lib-cats').innerHTML=Object.values(grouped).map((cat,ci)=>{
+    const cc=getCatColor(cat.key);
+    return`<div class="lib-cat">
+      <div class="lib-cat-header" onclick="toggleLibCat(${ci})">
+        <div style="width:32px;height:32px;border-radius:8px;background:${cc.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-list-check" style="font-size:15px;color:${cc.tc}"></i></div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${cat.name}</div><div style="font-size:11px;color:var(--text2)">${cat.items.length} مؤشر</div></div>
+        <i class="ti ti-chevron-down" id="chev-${ci}" style="font-size:14px;color:var(--text3);transition:transform .2s"></i>
+      </div>
+      <div class="lib-items" id="lib-${ci}">
+        ${cat.items.map(item=>{const added=addedNames.has(item.name);return`<div class="lib-item">
+          <div style="flex:1"><div style="font-size:12px;color:var(--text)">${item.name}</div><div style="font-size:11px;color:var(--text2)">الهدف: ${item.target||'—'}</div></div>
+          <button class="lib-add-btn ${added?'added':''}" id="lbtn-${item.id}" onclick="addFromLib('${item.id}','${item.name.replace(/'/g,"\\'")}','${item.target||''}','${cat.key}')">${added?'✓ مضاف':'+ إضافة'}</button>
+        </div>`;}).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleLibCat(i){const el=document.getElementById('lib-'+i);const ch=document.getElementById('chev-'+i);const open=el.classList.toggle('open');ch.style.transform=open?'rotate(180deg)':'';}
+
+async function addFromLib(libId,name,target,catKey){
+  if(!currentAssoc)return;
+  const existing=kpis.find(k=>k.name===name);
+  if(existing){showToast('هذا المؤشر مضاف بالفعل');return;}
+  const kpi=await api.ins('kpis',{association_id:currentAssoc.id,name,target,category_id:catKey,period:'ربعي',order_num:kpis.length});
+  if(kpi){kpis.push(kpi);document.getElementById('sb-kpi-count').textContent=kpis.length;const btn=document.getElementById('lbtn-'+libId);if(btn){btn.textContent='✓ مضاف';btn.classList.add('added');}showToast(`✓ تمت إضافة "${name}"`);}
+}
+
+// Custom KPI
+function openCustomCatSelect(){
+  const sel=document.getElementById('cm-cat');
+  const defaults=[{v:'gov',l:'الحوكمة والامتثال'},{v:'fin_perf',l:'السلامة المالية — أداء'},{v:'fin_org',l:'السلامة المالية — تنظيم'},{v:'compliance',l:'الامتثال والالتزام'},{v:'transparency',l:'الشفافية والإفصاح'},{v:'impact',l:'الأثر الاجتماعي'},{v:'custom',l:'مخصص'}];
+  sel.innerHTML=defaults.map(d=>`<option value="${d.v}">${d.l}</option>`).join('')+customCats.map(c=>`<option value="${c.key}">${c.name}</option>`).join('');
+}
+async function saveCustomKPI(){
+  const name=document.getElementById('cm-name').value.trim();if(!name||!currentAssoc)return;
+  const kpi=await api.ins('kpis',{association_id:currentAssoc.id,name,target:document.getElementById('cm-target').value.trim(),category_id:document.getElementById('cm-cat').value,period:document.getElementById('cm-period').value,order_num:kpis.length});
+  if(kpi){kpis.push(kpi);document.getElementById('sb-kpi-count').textContent=kpis.length;closeModal('custom-modal');document.getElementById('cm-name').value='';renderDash();showToast(`✓ تمت إضافة "${name}"`);}
+}
+
+// Users
+function renderUsers(){
+  const roleLabels={platform_admin:'مدير المنصة',association_admin:'مدير الجمعية',editor:'محرر',viewer:'مشاهد'};
+  const roleBgs={platform_admin:'var(--redl)',association_admin:'var(--gl)',editor:'var(--bluel)',viewer:'#F3E5F5'};
+  const roleTcs={platform_admin:'var(--red)',association_admin:'var(--g)',editor:'var(--blue)',viewer:'#6A1B9A'};
+  document.getElementById('users-list').innerHTML=profiles.map((p,i)=>`
+    <div class="member-row">
+      <div class="member-av" style="background:var(--gl);color:var(--g)">${ini(p.full_name,p.email)}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${p.full_name||p.email}${p.id===currentUser?.id?' (أنت)':''}</div><div style="font-size:11px;color:var(--text2)" dir="ltr">${p.email}</div></div>
+      <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:${roleBgs[p.role]||'var(--gl)'};color:${roleTcs[p.role]||'var(--g)'}">${roleLabels[p.role]||'عضو'}</span>
+    </div>`).join('')||'<div style="text-align:center;padding:20px;font-size:12px;color:var(--text3)">لا يوجد مستخدمون</div>';
+}
+
+async function sendInvite(){
+  const email=document.getElementById('inv-email').value.trim();if(!email)return;
+  const ok=await api.sendOTP(email);
+  if(ok){showToast(`✓ تم إرسال الدعوة إلى ${email}`);closeModal('invite-modal');document.getElementById('inv-email').value='';}
+  else showToast('⚠️ تعذّر الإرسال');
+}
+
+// Settings
+function renderCustomCats(){
+  document.getElementById('custom-cats-list').innerHTML=customCats.map((c,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--gray);border-radius:6px;margin-bottom:6px">
+      <input type="text" value="${c.name}" style="flex:1;font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:#fff;color:var(--text)" onchange="customCats[${i}].name=this.value;showToast('✓ تم التحديث')">
+      <button class="btn" style="padding:3px 8px;font-size:11px;color:var(--red);border-color:rgba(198,40,40,0.3)" onclick="customCats.splice(${i},1);renderCustomCats();showToast('تم الحذف')"><i class="ti ti-trash"></i></button>
+    </div>`).join('')||'<div style="font-size:11px;color:var(--text3);padding:6px 0">لا توجد تصنيفات مخصصة</div>';
+  const btn=document.getElementById('add-cat-btn');if(btn)btn.style.display=customCats.length>=3?'none':'inline-flex';
+}
+function addCustomCat(){if(customCats.length>=3){showToast('الحد الأقصى 3 تصنيفات');return;}customCats.push({key:'custom_'+(customCats.length+1),name:'تصنيف جديد '+(customCats.length+1)});renderCustomCats();showToast('✓ تمت إضافة التصنيف');}
+async function saveSettings(){
+  if(!currentAssoc)return;
+  const name=document.getElementById('assoc-name-input').value.trim();
+  const slug=document.getElementById('assoc-slug-input').value.trim();
+  if(!name||!slug)return;
+  await api.upd('associations',currentAssoc.id,{name,slug});
+  currentAssoc.name=name;currentAssoc.slug=slug;
+  document.getElementById('sb-assoc-name').textContent=name;
+  document.getElementById('sb-assoc-url').textContent=`kpis.kulmaz.com/${slug}`;
+  document.getElementById('board-org-name').textContent=name;
+  document.getElementById('board-logo').textContent=name.slice(0,2);
+  showToast('✓ تم حفظ الإعدادات');
+}
+
+// Board Mode
+function toggleBoard(){
+  const bw=document.getElementById('board-wrap');
+  const show=bw.style.display==='none'||!bw.style.display;
+  bw.style.display=show?'block':'none';
+  if(!show)return;
+  const on=kpis.filter(k=>(getLatestValue(k.id)||{}).status==='green').length;
+  const warn=kpis.filter(k=>(getLatestValue(k.id)||{}).status==='amber').length;
+  const off=kpis.filter(k=>(getLatestValue(k.id)||{}).status==='red').length;
+  document.getElementById('b-total').textContent=kpis.length;
+  document.getElementById('b-on').textContent=on;
+  document.getElementById('b-warn').textContent=warn;
+  document.getElementById('b-off').textContent=off;
+  document.getElementById('board-grid').innerHTML=kpis.map(k=>{
+    const val=getLatestValue(k.id)||{status:'amber',progress:0,value:'—'};
+    return`<div class="board-card"><div class="board-card-accent" style="background:${BPC[val.status||'amber']}"></div><div class="board-cat">${k.category_id||'مخصص'}</div><div class="board-kname">${k.name}</div><div class="board-val" style="color:${BPC[val.status||'amber']}">${val.value||'—'}</div><div class="board-target">الهدف: ${k.target||'—'}</div><div class="board-prog"><div class="board-prog-fill" style="width:${val.progress||0}%;background:${BPC[val.status||'amber']}"></div></div></div>`;
+  }).join('');
+  setTimeout(()=>{
+    if(boardDonut)boardDonut.destroy();
+    boardDonut=new Chart(document.getElementById('board-donut'),{type:'doughnut',data:{labels:['ضمن الهدف','متابعة','خارج الهدف'],datasets:[{data:[on,warn,off],backgroundColor:['#4ade80','#fbbf24','#f87171'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'left',labels:{color:'rgba(255,255,255,0.5)',font:{size:11},padding:10,boxWidth:10}}}}});
+    if(boardTrend)boardTrend.destroy();
+    boardTrend=new Chart(document.getElementById('board-trend'),{type:'bar',data:{labels:['يناير','فبراير','مارس','أبريل','مايو','يونيو'],datasets:[{label:'ضمن الهدف',data:[on-2,on-1,on,on,on,on].map(v=>Math.max(0,v)),backgroundColor:'rgba(74,222,128,0.7)',borderRadius:3},{label:'متابعة',data:[warn,warn,warn-1,warn,warn,warn].map(v=>Math.max(0,v)),backgroundColor:'rgba(251,191,36,0.7)',borderRadius:3},{label:'خارج',data:[off+1,off,off,off-1,off,off].map(v=>Math.max(0,v)),backgroundColor:'rgba(248,113,113,0.7)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'rgba(255,255,255,0.4)',font:{size:10},boxWidth:8}}},scales:{x:{stacked:true,ticks:{color:'rgba(255,255,255,0.35)',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},y:{stacked:true,ticks:{color:'rgba(255,255,255,0.35)',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+  },100);
+}
+
+// Navigation
+const pages=['dash','detail','update','library','users','share','settings'];
+function goTo(p,btn){
+  if(activeChart&&p!=='detail'){activeChart.destroy();activeChart=null;}
+  pages.forEach(x=>{const el=document.getElementById('page-'+x);if(el)el.style.display='none';});
+  document.getElementById('page-'+p).style.display='block';
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const titles={dash:'لوحة المؤشرات',update:'تحديث المؤشرات',library:'مكتبة المؤشرات',users:'المستخدمون',share:'المشاركة والتقارير',settings:'الإعدادات'};
+  if(titles[p]){document.getElementById('page-title').textContent=titles[p];document.getElementById('breadcrumb').innerHTML=`<i class="ti ti-home" style="font-size:12px"></i>&nbsp;<strong>${titles[p]}</strong>`;}
+  const showBoard=['dash','update','share'].includes(p);
+  document.getElementById('btn-board').style.display=showBoard?'':'none';
+  document.getElementById('btn-export').style.display=showBoard?'':'none';
+  if(p==='update')renderUpdateTable();
+  if(p==='library')renderLibrary();
+  if(p==='users')renderUsers();
+  if(p==='settings'){renderCustomCats();}
+}
+
+function topAction(){
+  const actions={dash:()=>{openCustomCatSelect();openModal('custom-modal');},library:()=>{openCustomCatSelect();openModal('custom-modal');},users:()=>openModal('invite-modal'),settings:()=>saveSettings()};
+  (actions[document.getElementById('page-title').textContent==='لوحة المؤشرات'?'dash':Object.keys(actions).find(k=>document.getElementById('page-'+k).style.display!=='none')]||function(){})();
+}
+
+// Modals
+function openModal(id){if(id==='custom-modal')openCustomCatSelect();document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));});
+
+// Sidebar
+function toggleSb(){sbOpen=!sbOpen;document.getElementById('sb').classList.toggle('collapsed',!sbOpen);}
+
+// Copy link
+function copyLink(id){const el=document.getElementById(id);if(el){navigator.clipboard?.writeText(el.textContent);showToast('✓ تم نسخ الرابط');}}
+
+// Export
+function exportPDF(){showToast('جاري إنشاء تقرير PDF...');}
+function exportExcel(){
+  const rows=[['المؤشر','القيمة الحالية','الهدف','الحالة','الفترة','مرجع الإثبات']];
+  kpis.forEach(k=>{const val=getLatestValue(k.id)||{};rows.push([k.name,val.value||'—',k.target||'—',val.status==='green'?'ضمن الهدف':val.status==='red'?'خارج الهدف':'يحتاج متابعة',k.period||'—',val.evidence_ref||'—']);});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+rows.map(r=>r.join(',')).join('\n')],{type:'text/csv;charset=utf-8;'}));a.download=`مؤشرات-${currentAssoc?.name||'الجمعية'}.csv`;a.click();showToast('⬇ تم التصدير');
+}
+
+// OTP keyboard
+document.getElementById('otp-input').addEventListener('keydown',e=>{if(e.key==='Enter')verifyOTP();});
+document.getElementById('email-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendOTP();});
+
+// Toast
+let toastT;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2500);}
+
+// Init
+async function init(){const user=await api.getUser();if(user){currentUser=user;await loadApp();}}
+init();
+</script>
+</body>
+</html>
