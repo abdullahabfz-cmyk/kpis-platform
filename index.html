@@ -880,7 +880,8 @@ function toggleBoard(){
   const bw=document.getElementById('board-wrap');
   const show=bw.style.display==='none'||!bw.style.display;
   bw.style.display=show?'block':'none';
-  if(!show)return;
+  if(!show){if(document.fullscreenElement)document.exitFullscreen();return;}
+  bw.requestFullscreen?.();
   const on=kpis.filter(k=>(getLatestValue(k.id)||{}).status==='green').length;
   const warn=kpis.filter(k=>(getLatestValue(k.id)||{}).status==='amber').length;
   const off=kpis.filter(k=>(getLatestValue(k.id)||{}).status==='red').length;
