@@ -285,7 +285,7 @@ body{font-family:'IBM Plex Sans Arabic',sans-serif;direction:rtl;background:var(
         <div class="card-box" id="detail-header"></div>
         <div class="card-box">
           <div class="sec-title" style="margin-bottom:12px">التطور التاريخي</div>
-          <canvas id="history-chart" height="110"></canvas>
+          <div style="position:relative;height:160px;width:100%"><canvas id="history-chart"></canvas></div>
         </div>
         <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">
           <table style="width:100%;border-collapse:collapse">
@@ -421,8 +421,8 @@ body{font-family:'IBM Plex Sans Arabic',sans-serif;direction:rtl;background:var(
         <div class="board-sum"><div class="board-sum-n" style="color:#f87171" id="b-off">0</div><div class="board-sum-l">خارج الهدف</div></div>
       </div>
       <div class="board-charts">
-        <div class="board-chart-card"><div class="board-chart-title">توزيع حالات المؤشرات</div><canvas id="board-donut" height="120"></canvas></div>
-        <div class="board-chart-card"><div class="board-chart-title">مسار الإنجاز — آخر 6 أشهر</div><canvas id="board-trend" height="120"></canvas></div>
+        <div class="board-chart-card"><div class="board-chart-title">توزيع حالات المؤشرات</div><div style="position:relative;height:140px;width:100%"><canvas id="board-donut"></canvas></div></div>
+        <div class="board-chart-card"><div class="board-chart-title">مسار الإنجاز — آخر 6 أشهر</div><div style="position:relative;height:140px;width:100%"><canvas id="board-trend"></canvas></div></div>
       </div>
       <div class="board-grid" id="board-grid"></div>
     </div>
@@ -455,7 +455,7 @@ body{font-family:'IBM Plex Sans Arabic',sans-serif;direction:rtl;background:var(
       <select id="inv-role">
         <option value="editor">محرر — يحدّث القيم فقط</option>
         <option value="viewer">مشاهد — للقراءة فقط</option>
-        <option value="admin">مدير الجمعية</option>
+        <option value="association_admin">مدير الجمعية</option>
       </select>
     </div>
     <div style="background:var(--gray);border-radius:6px;padding:10px;font-size:11px;color:var(--text2);margin-top:4px"><i class="ti ti-mail" style="font-size:13px"></i> سيصله إيميل دعوة مع رابط الدخول</div>
@@ -502,6 +502,8 @@ let sbOpen=true;
 const PC={green:'#2E7D32',amber:'#F57F17',red:'#C62828'};
 const BPC={green:'#4ade80',amber:'#fbbf24',red:'#f87171'};
 const catColors={gov:{bg:'#E8F4F0',tc:'#006944'},fin_perf:{bg:'#E3F2FD',tc:'#1565C0'},fin_org:{bg:'#E8F4F0',tc:'#006944'},compliance:{bg:'#FFF8E1',tc:'#F57F17'},transparency:{bg:'#F3E5F5',tc:'#6A1B9A'},impact:{bg:'#FCE4EC',tc:'#AD1457'},custom:{bg:'#F0F4F8',tc:'#4A5568'}};
+const catNames={gov:'الحوكمة والامتثال',fin_perf:'السلامة المالية — أداء',fin_org:'السلامة المالية — تنظيم',compliance:'الامتثال والالتزام',transparency:'الشفافية والإفصاح',impact:'الأثر الاجتماعي',custom:'مخصص'};
+function getCatName(key){return catNames[key]||key||'مخصص';}
 
 function getCatColor(key){return catColors[key]||catColors.custom;}
 function ini(n,e){if(n&&n!==e)return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();return(e||'?')[0].toUpperCase();}
@@ -630,7 +632,7 @@ function renderKPIList(){
       <div class="kpi-header">
         <div class="kpi-dot" style="background:${PC[val.status||'amber']}"></div>
         <div class="kpi-name">${k.name}</div>
-        <span class="kpi-cat" style="background:${cc.bg};color:${cc.tc}">${k.category_id||'مخصص'}</span>
+        <span class="kpi-cat" style="background:${cc.bg};color:${cc.tc}">${getCatName(k.category_id)}</span>
         <span class="tag t-${val.status==='green'?'on':val.status==='red'?'off':'warn'}">${val.status==='green'?'ضمن الهدف':val.status==='red'?'خارج الهدف':'يحتاج متابعة'}</span>
       </div>
       <div class="kpi-body">
@@ -652,7 +654,7 @@ function showDetail(kpiId){
   document.getElementById('detail-header').innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
       <div style="width:38px;height:38px;border-radius:8px;background:${cc.bg};display:flex;align-items:center;justify-content:center"><i class="ti ti-chart-line" style="font-size:18px;color:${cc.tc}"></i></div>
-      <div style="flex:1"><div style="font-size:14px;font-weight:500;color:var(--text)">${k.name}</div><div style="font-size:11px;color:var(--text2)">${k.category_id||'مخصص'} · ${k.period||'—'}</div></div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500;color:var(--text)">${k.name}</div><div style="font-size:11px;color:var(--text2)">${getCatName(k.category_id)} · ${k.period||'—'}</div></div>
       <div style="text-align:left"><div style="font-size:22px;font-weight:500;color:${PC[val.status||'amber']}">${val.value||'—'}</div><div style="font-size:11px;color:var(--text2)">الهدف: ${k.target||'—'}</div></div>
     </div>
     <div style="height:6px;background:var(--gray);border-radius:4px;overflow:hidden"><div style="width:${val.progress||0}%;height:100%;background:${PC[val.status||'amber']};border-radius:4px"></div></div>`;
@@ -679,7 +681,7 @@ function renderUpdateTable(){
   document.getElementById('update-tbody').innerHTML=kpis.map(k=>{
     const val=getLatestValue(k.id)||{value:'',evidence_ref:''};
     return`<tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:8px 12px;font-size:12px">${k.name}<div style="font-size:10px;color:var(--text3)">الهدف: ${k.target||'—'}</div></td>
+      <td style="padding:8px 12px;font-size:12px">${k.name}<div style="font-size:10px;color:var(--text3);margin-top:2px">الهدف: ${k.target||'—'} &nbsp;·&nbsp; ${getCatName(k.category_id)}</div></td>
       <td style="padding:8px;text-align:center"><input type="text" data-kpi="${k.id}" data-field="value" value="${val.value||''}" placeholder="أدخل القيمة..." style="width:90px;text-align:center;font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--gray);color:var(--text)"></td>
       <td style="padding:8px 12px"><input type="text" data-kpi="${k.id}" data-field="ref" value="${val.evidence_ref||''}" placeholder="رابط أو وصف مكان الملف..." style="width:100%;font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--gray);color:var(--text)"></td>
     </tr>`;
@@ -815,10 +817,36 @@ function renderUsers(){
 }
 
 async function sendInvite(){
-  const email=document.getElementById('inv-email').value.trim();if(!email)return;
-  const ok=await api.sendOTP(email);
-  if(ok){showToast(`✓ تم إرسال الدعوة إلى ${email}`);closeModal('invite-modal');document.getElementById('inv-email').value='';}
-  else showToast('⚠️ تعذّر الإرسال');
+  const email=document.getElementById('inv-email').value.trim();
+  if(!email){showToast('⚠️ أدخل البريد الإلكتروني');return;}
+  if(!currentAssoc){showToast('⚠️ خطأ في تحميل بيانات الجمعية');return;}
+  const role=document.getElementById('inv-role').value;
+  // أرسل magic link للمستخدم
+  const r=await fetch(`${SUPABASE_URL}/auth/v1/magiclink`,{
+    method:'POST',
+    headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({email})
+  });
+  if(r.ok){
+    // أنشئ أو حدّث البروفايل بدور المستخدم الجديد
+    const existing=await api.q('profiles',`email=eq.${encodeURIComponent(email)}`);
+    if(existing.length){
+      await api.upd('profiles',existing[0].id,{role,association_id:currentAssoc.id});
+    } else {
+      await api.ins('profiles',{email,role,association_id:currentAssoc.id,full_name:email.split('@')[0]},false);
+    }
+    showToast(`✓ تم إرسال الدعوة إلى ${email}`);
+    closeModal('invite-modal');
+    document.getElementById('inv-email').value='';
+    document.getElementById('inv-name').value='';
+    // أعد تحميل قائمة المستخدمين من Supabase
+    profiles=await api.q('profiles',`association_id=eq.${currentAssoc.id}`);
+    renderUsers();
+  } else {
+    const err=await r.json().catch(()=>({}));
+    console.error('invite error',err);
+    showToast('⚠️ تعذّر الإرسال — تحقق من الإيميل');
+  }
 }
 
 // Settings
@@ -840,6 +868,8 @@ async function saveSettings(){
   currentAssoc.name=name;currentAssoc.slug=slug;
   document.getElementById('sb-assoc-name').textContent=name;
   document.getElementById('sb-assoc-url').textContent=`kpis.kulmaz.com/${slug}`;
+  document.getElementById('donors-link').textContent=`kpis.kulmaz.com/${slug}/donors`;
+  document.getElementById('oversight-link').textContent=`kpis.kulmaz.com/${slug}/oversight`;
   document.getElementById('board-org-name').textContent=name;
   document.getElementById('board-logo').textContent=name.slice(0,2);
   showToast('✓ تم حفظ الإعدادات');
@@ -860,7 +890,7 @@ function toggleBoard(){
   document.getElementById('b-off').textContent=off;
   document.getElementById('board-grid').innerHTML=kpis.map(k=>{
     const val=getLatestValue(k.id)||{status:'amber',progress:0,value:'—'};
-    return`<div class="board-card"><div class="board-card-accent" style="background:${BPC[val.status||'amber']}"></div><div class="board-cat">${k.category_id||'مخصص'}</div><div class="board-kname">${k.name}</div><div class="board-val" style="color:${BPC[val.status||'amber']}">${val.value||'—'}</div><div class="board-target">الهدف: ${k.target||'—'}</div><div class="board-prog"><div class="board-prog-fill" style="width:${val.progress||0}%;background:${BPC[val.status||'amber']}"></div></div></div>`;
+    return`<div class="board-card"><div class="board-card-accent" style="background:${BPC[val.status||'amber']}"></div><div class="board-cat">${getCatName(k.category_id)}</div><div class="board-kname">${k.name}</div><div class="board-val" style="color:${BPC[val.status||'amber']}">${val.value||'—'}</div><div class="board-target">الهدف: ${k.target||'—'}</div><div class="board-prog"><div class="board-prog-fill" style="width:${val.progress||0}%;background:${BPC[val.status||'amber']}"></div></div></div>`;
   }).join('');
   setTimeout(()=>{
     if(boardDonut)boardDonut.destroy();
